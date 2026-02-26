@@ -51,6 +51,12 @@ RUN pnpm build
 ENV OPENCLAW_PREFER_PNPM=1
 RUN pnpm ui:build
 
+# کپی entrypoint script
+COPY --chown=node:node docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+USER root
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+USER node
+
 ENV NODE_ENV=production
 
 # Security hardening: Run as non-root user
@@ -58,10 +64,13 @@ ENV NODE_ENV=production
 # This reduces the attack surface by preventing container escape via root privileges
 USER node
 
-# Start gateway server with default config.
-# Binds to loopback (127.0.0.1) by default for security.
-#
-# For container platforms requiring external health checks:
-#   1. Set OPENCLAW_GATEWAY_TOKEN or OPENCLAW_GATEWAY_PASSWORD env var
-#   2. Override CMD: ["node","openclaw.mjs","gateway","--allow-unconfigured","--bind","lan"]
-CMD ["node", "openclaw.mjs", "gateway", "--allow-unconfigured"]
+# استفاده از entrypoint برای تنظیمات خودکار
+# این اسکریپت:
+# - پوشه‌های مورد نیاز را می‌سازد
+# - Token تولید یا بازیابی می‌کند
+# - فایل تنظیمات را می‌سازد (اگر نباشد)
+# - Gateway را راه‌اندازی می‌کند
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
+# دستور پیش‌فرض (می‌تواند override شود)
+CMD []

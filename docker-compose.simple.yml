@@ -1,0 +1,56 @@
+# docker-compose.simple.yml
+# نسخه ساده که فقط با متغیرهای محیطی کار می‌کند
+# استفاده: docker compose -f docker-compose.simple.yml up -d
+
+services:
+  openclaw:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    container_name: openclaw
+    
+    # متغیرهای محیطی
+    environment:
+      # تنظیمات اصلی
+      HOME: /home/node
+      TERM: xterm-256color
+      
+      # تنظیمات Gateway
+      OPENCLAW_GATEWAY_PORT: ${OPENCLAW_GATEWAY_PORT:-18789}
+      OPENCLAW_BRIDGE_PORT: ${OPENCLAW_BRIDGE_PORT:-18790}
+      OPENCLAW_GATEWAY_BIND: ${OPENCLAW_GATEWAY_BIND:-lan}
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
+      
+      # کلیدهای Provider (اختیاری)
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
+    
+    # Mount ها
+    volumes:
+      # تنظیمات و workspace (bind mount)
+      - ${OPENCLAW_CONFIG_DIR:-~/.openclaw}:/home/node/.openclaw
+      - ${OPENCLAW_WORKSPACE_DIR:-~/.openclaw/workspace}:/home/node/.openclaw/workspace
+      
+      # Volume اختیاری برای /home/node (اگر تنظیم شده باشد)
+      # برای فعال‌سازی: OPENCLAW_HOME_VOLUME=openclaw_home
+      # - openclaw_home:/home/node
+    
+    # پورت‌ها
+    ports:
+      - "${OPENCLAW_GATEWAY_PORT:-18789}:${OPENCLAW_GATEWAY_PORT:-18789}"
+      - "${OPENCLAW_BRIDGE_PORT:-18790}:${OPENCLAW_BRIDGE_PORT:-18790}"
+    
+    # تنظیمات container
+    init: true
+    restart: unless-stopped
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "dist/index.js", "health", "--token", "${OPENCLAW_GATEWAY_TOKEN:-}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Volume اختیاری (uncomment اگر می‌خواهید استفاده کنید)
+# volumes:
+#   openclaw_home:

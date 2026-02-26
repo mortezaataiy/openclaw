@@ -1,0 +1,22 @@
+# docker-compose.test.yml - برای تست
+services:
+  openclaw-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: openclaw-test
+    
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_PORT: ${OPENCLAW_GATEWAY_PORT:-18789}
+      OPENCLAW_BRIDGE_PORT: ${OPENCLAW_BRIDGE_PORT:-18790}
+      OPENCLAW_GATEWAY_BIND: ${OPENCLAW_GATEWAY_BIND:-lan}
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
+    
+    volumes:
+      - ./test-config:/home/node/.openclaw
+      - ./test-workspace:/home/node/.openclaw/workspace
+    
+    ports:
+      - "${OPENCLAW_GATEWAY_PORT:-18789}:${OPENCLAW_GATEWAY_PORT:-18789}"
