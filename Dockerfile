@@ -7,7 +7,6 @@ ENV PATH="/root/.bun/bin:${PATH}"
 RUN corepack enable
 
 WORKDIR /app
-RUN chown node:node /app
 
 ARG OPENCLAW_DOCKER_APT_PACKAGES=""
 RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
@@ -17,12 +16,8 @@ RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
       rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
     fi
 
-COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-COPY --chown=node:node ui/package.json ./ui/package.json
-COPY --chown=node:node patches ./patches
-COPY --chown=node:node scripts ./scripts
 
-USER node
+USER root
 RUN pnpm install --frozen-lockfile
 
 # Optionally install Chromium and Xvfb for browser automation.
@@ -37,13 +32,11 @@ RUN if [ -n "$OPENCLAW_INSTALL_BROWSER" ]; then \
       mkdir -p /home/node/.cache/ms-playwright && \
       PLAYWRIGHT_BROWSERS_PATH=/home/node/.cache/ms-playwright \
       node /app/node_modules/playwright-core/cli.js install --with-deps chromium && \
-      chown -R node:node /home/node/.cache/ms-playwright && \
       apt-get clean && \
       rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
     fi
 
-USER node
-COPY --chown=node:node . .
+USER root
 RUN pnpm build
 # Force pnpm for UI build (Bun may fail on ARM/Synology architectures)
 ENV OPENCLAW_PREFER_PNPM=1
@@ -54,7 +47,7 @@ ENV NODE_ENV=production
 # Security hardening: Run as non-root user
 # The node:22-bookworm image includes a 'node' user (uid 1000)
 # This reduces the attack surface by preventing container escape via root privileges
-USER node
+USER root
 
 # Start gateway server with default config.
 # Binds to loopback (127.0.0.1) by default for security.
